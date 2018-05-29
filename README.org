@@ -1,0 +1,64 @@
+#+TITLE: ꜱᴘᴇʟᴏ: Stupid Persistence for Emacs Lisp Objects
+#+AUTHOR: Thibault Polge
+
+Sᴘᴇʟᴏ is a minimalist persistence library for Emacs Lisp.  It operates
+on individual variables, serializing them to user-configured Emacs
+Lisp files, and plays well with [[https://github.com/emacscollective/no-littering][no-littering]].  By default, ꜱᴘᴇʟᴏ loads
+variables when init has finished running, and saves them when quitting
+Emacs, but it can also triggers loading and saving when specific Emacs
+Lisp functions are called.
+
+* Usage
+
+ꜱᴘᴇʟᴏ can be used interactively, and/or configured from your =init.el=, or used in third-party packages or libraries.
+
+** Interactive use
+
+To use ꜱᴘᴇʟᴏ interactively, just call
+
+The main entry point of ꜱᴘᴇʟᴏ is the =ꜱᴘᴇʟᴏ-manage= macro.  The macro requires one argument, the name of the variable to manage.  The following invocation makes ꜱᴘᴇʟᴏ read and write the value of the variable =recentf-list=:
+
+#+BEGIN_SRC emacs-lisp
+(ꜱᴘᴇʟᴏ-manage recenf-list)
+#+END_SRC
+
+=ꜱᴘᴇʟᴏ-manage= accepts a few optional arguments:
+
+ - =:file= :: configure the file to associate the variable.  The default
+              value is the value of =ꜱᴘᴇʟᴏ-default-file=.
+
+ - =:load= :: takes a function name or a list of function names.  ꜱᴘᴇʟᴏ
+              advises these functions to trigger reloading of the
+              variable when they're invoked.
+
+ - =:save= :: has the same format as =:load=, but will /save/ the variable
+              value /after/ the function has run.
+
+ - =:serializer= :: configures the function to use to serialize the
+                    variable's value to the disk.  Its argument is a
+                    function name or a lambda, taking the value to
+                    serialize as its first argument and ignoring the
+                    remaining arguments.  The serializer ~(insert)~ the
+                    serialized value in the current buffer at the
+                    current point.  Its return value is ignored,
+                    issues must raise an error.
+
+                    The default serializer is as simple as ~(lambda (v &rest
+                    _) (prin1 v 'insert)~.
+
+ - =:deserializer= ::
+
+** Complete example
+
+#+begin_src emacs-lisp
+  (ꜱᴘᴇʟᴏ-manage
+   ;; The variable to manage
+   erc-autojoin-channels-alist
+   ;; The file name to serialize to.
+   ;; Multiple variables can share the same file.
+   (no-littering-expand-etc-file-name "erc/autojoin")
+   ;; Functions which should trigger a reload of the file.
+   :load (erc-autojoin-add erc-autojoin-remove)
+   ;; Functions which should trigger saving back the variable.
+   :save (erc-autojoin-add erc-autojoin-remove))
+#+end_src
